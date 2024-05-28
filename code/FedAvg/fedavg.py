@@ -124,7 +124,7 @@ class CustomDataset(Dataset):
         return self.amount
 
     def __getitem__(self, item):
-        image, label = self.dataset[np.random.choice(self.idxs[item], size=self.amount)]
+        image, label = self.dataset[np.random.choice(self.idxs)]
         return image, label
 
 
