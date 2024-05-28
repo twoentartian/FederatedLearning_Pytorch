@@ -150,7 +150,7 @@ class ClientUpdate(object):
             model.train()
             for data, labels in self.train_loader:
                 if data.size()[0] < 2:
-                    continue;
+                    continue
 
                 if torch.cuda.is_available():
                     data, labels = data.cuda(), labels.cuda()
@@ -214,7 +214,6 @@ def training(model, rounds, batch_size, lr, ds, data_dict, C, K, E, plt_title, p
     train_loss = []
     test_loss = []
     test_accuracy = []
-    best_accuracy = 0
     # measure time
     start = time.time()
 
@@ -245,17 +244,17 @@ def training(model, rounds, batch_size, lr, ds, data_dict, C, K, E, plt_title, p
 
         global_weights = weights_avg
 
-        if curr_round == 200:
-            lr = lr / 2
-            E = E - 1
+        # if curr_round == 200:
+        #     lr = lr / 2
+        #     E = E - 1
 
-        if curr_round == 300:
-            lr = lr / 2
-            E = E - 2
+        # if curr_round == 300:
+        #     lr = lr / 2
+        #     E = E - 2
 
-        if curr_round == 400:
-            lr = lr / 5
-            E = E - 3
+        # if curr_round == 400:
+        #     lr = lr / 5
+        #     E = E - 3
 
         # move the updated weights to our model state dict
         model.load_state_dict(global_weights)
@@ -269,10 +268,8 @@ def training(model, rounds, batch_size, lr, ds, data_dict, C, K, E, plt_title, p
         test_accuracy.append(t_accuracy)
         test_loss.append(t_loss)
 
-        if best_accuracy < t_accuracy:
-            best_accuracy = t_accuracy
         # torch.save(model.state_dict(), plt_title)
-        print(curr_round, loss_avg, t_loss, test_accuracy[0], best_accuracy)
+        print(curr_round, t_loss, t_accuracy, loss_avg)
         # print('best_accuracy:', best_accuracy, '---Round:', curr_round, '---lr', lr, '----localEpocs--', E)
 
     end = time.time()
@@ -290,7 +287,7 @@ def training(model, rounds, batch_size, lr, ds, data_dict, C, K, E, plt_title, p
     ax.set(xlabel='Number of Rounds', ylabel='Train Loss',
            title=plt_title)
     ax.grid()
-    # fig.savefig(plt_title+'.jpg', format='jpg')
+    fig.savefig(plt_title+'.jpg', format='jpg')
     print("Training Done!")
     print("Total time taken to Train: {}".format(end - start))
 
