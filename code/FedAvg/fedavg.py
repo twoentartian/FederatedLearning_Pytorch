@@ -115,21 +115,22 @@ Local training for the model on client side
 
 
 class CustomDataset(Dataset):
-    def __init__(self, dataset, idxs):
+    def __init__(self, dataset, idxs, amount):
         self.dataset = dataset
         self.idxs = list(idxs)
-
+        self.amount=amount
+        
     def __len__(self):
-        return len(self.idxs)
+        return self.amount
 
     def __getitem__(self, item):
-        image, label = self.dataset[self.idxs[item]]
+        image, label = self.dataset[np.random.choice(self.idxs[item], size=self.amount)]
         return image, label
 
 
 class ClientUpdate(object):
-    def __init__(self, dataset, batchSize, learning_rate, epochs, idxs, sch_flag):
-        self.train_loader = DataLoader(CustomDataset(dataset, idxs), batch_size=batchSize, shuffle=True)
+    def __init__(self, dataset, batchSize, learning_rate, epochs, idxs, sch_flag, R):
+        self.train_loader = DataLoader(CustomDataset(dataset, idxs, batchSize*R), batch_size=batchSize, shuffle=True)
         self.learning_rate = learning_rate
         self.epochs = epochs
         self.sch_flag = sch_flag
@@ -227,7 +228,7 @@ def training(model, rounds, batch_size, lr, ds, data_dict, C, K, E, plt_title, p
         for k in S_t:
             # Compute a local update
             local_update = ClientUpdate(dataset=ds, batchSize=batch_size, learning_rate=lr, epochs=E, idxs=data_dict[k],
-                                        sch_flag=sch_flag)
+                                        sch_flag=sch_flag, R=1)
             # Update means retrieve the values of the network weights
             weights, loss = local_update.train(model=copy.deepcopy(model))
 
