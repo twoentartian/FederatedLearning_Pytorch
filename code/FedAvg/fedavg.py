@@ -15,6 +15,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import copy
 import random
+from datetime import datetime
 import time
 import torchvision
 import torch
@@ -188,7 +189,7 @@ Following Algorithm 1 from the paper
 
 
 def training(model, rounds, batch_size, lr, ds, data_dict, C, K, E, plt_title, plt_color, cifar_data_test,
-             test_batch_size, criterion, num_classes, classes_test, sch_flag):
+             test_batch_size, criterion, num_classes, classes_test, sch_flag, accuracy_file):
     """
     Function implements the Federated Averaging Algorithm from the FedAvg paper.
     Specifically, this function is used for the server side training and weight update
@@ -271,6 +272,8 @@ def training(model, rounds, batch_size, lr, ds, data_dict, C, K, E, plt_title, p
 
         # torch.save(model.state_dict(), plt_title)
         print(curr_round, t_loss, t_accuracy, loss_avg)
+        accuracy_file.write(f"{curr_round},{t_accuracy},{t_loss}\n")
+        accuracy_file.flush()
         # print('best_accuracy:', best_accuracy, '---Round:', curr_round, '---lr', lr, '----localEpocs--', E)
 
     end = time.time()
@@ -369,6 +372,12 @@ if __name__ == '__main__':
     parser.add_argument('--sch_flag', default=False)
 
     args = parser.parse_args()
+
+    output_folder_name = datetime.now().strftime("%m_%d_%Y__%H_%M_%S")
+    os.mkdir(output_folder_name)
+    accuracy_file = open(os.path.join(output_folder_name, "accuracy.csv"), "w")
+    accuracy_file.write(f"round,accuracy,loss\n")    # header
+
     # create transforms
     # We will just convert to tensor and normalize since no special transforms are mentioned in the paper
     stats = ((0.49139968, 0.48215841, 0.44653091), (0.24703223, 0.24348513, 0.26158784))
@@ -414,4 +423,6 @@ if __name__ == '__main__':
     print(plot_str)
 
     trained_model = training(cifar_cnn, H[0], H[4], H[5], cifar_data_train, data_dict, H[1], H[2], H[3], plot_str,
-                             "green", cifar_data_test, 128, criterion, num_classes, classes_test, args.sch_flag)
+                             "green", cifar_data_test, 128, criterion, num_classes, classes_test, args.sch_flag, accuracy_file)
+    
+    accuracy_file.close()
