@@ -27,6 +27,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torchvision import transforms, utils, datasets
 from argparse import ArgumentParser
 from torchvision import transforms as tt
+import service_variance
 
 # from torchsummary import summary
 
@@ -189,7 +190,7 @@ Following Algorithm 1 from the paper
 
 
 def training(model, rounds, batch_size, lr, ds, data_dict, C, K, E, plt_title, plt_color, cifar_data_test,
-             test_batch_size, criterion, num_classes, classes_test, sch_flag, accuracy_file):
+             test_batch_size, criterion, num_classes, classes_test, sch_flag, accuracy_file, variance_recorder):
     """
     Function implements the Federated Averaging Algorithm from the FedAvg paper.
     Specifically, this function is used for the server side training and weight update
@@ -219,6 +220,7 @@ def training(model, rounds, batch_size, lr, ds, data_dict, C, K, E, plt_title, p
     # measure time
     start = time.time()
 
+    variance_recorder.write_header(model)
     for curr_round in range(1, rounds + 1):
         w, local_loss = [], []
         # Retrieve the number of clients participating in the current training
@@ -267,6 +269,8 @@ def training(model, rounds, batch_size, lr, ds, data_dict, C, K, E, plt_title, p
         train_loss.append(loss_avg)
 
         t_accuracy, t_loss = testing(model, cifar_data_test, test_batch_size, criterion, num_classes, classes_test)
+        variance_recorder.write_row(model)
+
         test_accuracy.append(t_accuracy)
         test_loss.append(t_loss)
 
@@ -414,15 +418,20 @@ if __name__ == '__main__':
     else:
         cifar_cnn = resnet.ResNet(resnet.Bottleneck, [3, 4, 6, 3], num_classes=10, zero_init_residual=False, groups=1,
                                   width_per_group=64, replace_stride_with_dilation=None)
-
-    cifar_cnn.cuda()
+    if torch.cuda.is_available():
+        cifar_cnn.cuda()
 
     plot_str = args.partition + '_' + args.norm + '_' + 'comm_rounds_' + str(args.commrounds) + '_clientfr_' + str(
         args.clientfr) + '_numclients_' + str(args.numclient) + '_clientepochs_' + str(
         args.clientepochs) + '_clientbs_' + str(args.clientbs) + '_clientLR_' + str(args.clientlr)
     print(plot_str)
 
+    log_file = open(os.path.join(output_folder_name, f"{plot_str}.txt"), "w")
+    log_file.close()
+
+    variance_recorder = service_variance.ServiceVarianceRecorder(output_folder_name)
     trained_model = training(cifar_cnn, H[0], H[4], H[5], cifar_data_train, data_dict, H[1], H[2], H[3], plot_str,
-                             "green", cifar_data_test, 128, criterion, num_classes, classes_test, args.sch_flag, accuracy_file)
+                             "green", cifar_data_test, 128, criterion, num_classes, classes_test, args.sch_flag,
+                             accuracy_file, variance_recorder)
     
     accuracy_file.close()
